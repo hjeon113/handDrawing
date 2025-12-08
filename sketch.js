@@ -98,12 +98,49 @@ function draw() {
   noStroke();
   rect(BAR_X, WIN_Y - 20, BAR_W + VW, 20); // 타이틀바
 
-  // 웹캠 (좌우반전 = 거울)
-  push();
-  translate(WIN_X + VW, WIN_Y);
-  scale(-1, 1);
-  image(video, 0, 0, VW, VH);
-  pop();
+  //    함수명    입력값   리턴값
+  const mirror = (x) => WIN_X + VW - x; // 좌표 반전 함수
+
+  // 웹캠 영역 (검은 배경 + 스켈레톤)
+  fill(0);
+  noStroke();
+  rect(WIN_X, WIN_Y, VW, VH);
+  
+  // 손 스켈레톤 그리기
+  const fingerConnections = [
+    [0, 1, 2, 3, 4],       // 엄지
+    [0, 5, 6, 7, 8],       // 검지
+    [0, 9, 10, 11, 12],    // 중지
+    [0, 13, 14, 15, 16],   // 약지
+    [0, 17, 18, 19, 20],   // 새끼
+    [5, 9, 13, 17]         // 손바닥
+  ];
+  
+  for (let hand of hands) {
+    let kp = hand.keypoints;
+    
+    // 드로잉 손(화면 왼손) = 라임색, 나머지 = 하얀색
+    let skeletonColor = (hand.handedness === "Right") ? color(200, 255, 0) : color(255);
+    
+    stroke(skeletonColor);
+    strokeWeight(2);
+    
+    // 선 연결
+    for (let conn of fingerConnections) {
+      for (let i = 0; i < conn.length - 1; i++) {
+        let p1 = kp[conn[i]];
+        let p2 = kp[conn[i + 1]];
+        line(mirror(p1.x), WIN_Y + p1.y, mirror(p2.x), WIN_Y + p2.y);
+      }
+    }
+    
+    // 관절 점
+    fill(skeletonColor);
+    noStroke();
+    for (let p of kp) {
+      circle(mirror(p.x), WIN_Y + p.y, 6);
+    }
+  }
 
   // 안내 텍스트
   fill(100);
@@ -118,8 +155,6 @@ function draw() {
     if (hand.handedness === "Left") controlHand = hand; // 화면상 오른손
     else if (hand.handedness === "Right") drawHand = hand; // 화면상 왼손
   }
-  //    함수명    입력값   리턴값
-  const mirror = (x) => WIN_X + VW - x; // 좌표 반전 함수
 
   // 오른손: 브러시 크기 조절 + 도형 변경
   if (controlHand) {
@@ -207,6 +242,23 @@ function draw() {
       // 나머지 75% = 그리기 영역 → 캔버스 전체로 매핑
       let mx = map(vx, VW * 0.25, VW, 0, W);
       let my = map(vy, VH * 0.1, VH * 0.9, 0, H);
+      
+      // 커서 항상 표시 (pause 상태에서도)
+      colorMode(HSB, 360, 255, 255);
+      if (isDrawing) {
+        fill(brushColor.r, brushColor.g, brushColor.b, 150);
+      } else {
+        // pause 상태 - 반투명 빨간 커서
+        fill(0, 255, 255, 100);
+      }
+      noStroke();
+      if (brushShape === "circle") {
+        circle(mx, my, brushSize);
+      } else {
+        rectMode(CENTER);
+        rect(mx, my, brushSize, brushSize);
+      }
+      colorMode(RGB);
       
       if (isDrawing) {
         // 손가락 벌리면 그리기
