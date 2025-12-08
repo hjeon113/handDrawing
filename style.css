@@ -29,3 +29,32 @@ body {
 .upload-btn:hover {
   background: #3367d6;
 }
+
+.instructions {
+  position: fixed;
+  bottom: 15px;
+  left: 15px;
+  display: flex;
+  gap: 20px;
+  z-index: 1000;
+}
+
+.hand-info {
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 12px 15px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hand-info strong {
+  color: #c8ff00;
+  margin-bottom: 3px;
+}
+
+.hand-info span {
+  color: #ddd;
+}
