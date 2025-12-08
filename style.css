@@ -10,3 +10,22 @@ body {
   align-items: center;
   min-height: 100vh;
 }
+
+.upload-btn {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  background: #4285f4;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: bold;
+  padding: 10px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  z-index: 1000;
+  transition: background 0.2s;
+}
+
+.upload-btn:hover {
+  background: #3367d6;
+}
