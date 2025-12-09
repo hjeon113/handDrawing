@@ -227,9 +227,9 @@ function draw() {
     circle(mirror(index.x), WIN_Y + index.y, 10);
     circle(mirror(middle.x), WIN_Y + middle.y, 10);
 
-    textAlign(LEFT);
-    text("size", mirror(index.x) + 15, WIN_Y + index.y - 5);
-    text(brushShape, mirror(middle.x) + 15, WIN_Y + middle.y - 5);
+    textAlign(RIGHT);
+    text("size", mirror(index.x) - 15, WIN_Y + index.y - 5);
+    text(brushShape, mirror(middle.x) - 15, WIN_Y + middle.y - 5);
   }
 
   // 왼손: 색상 선택 + 드로잉
