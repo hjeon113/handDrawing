@@ -55,11 +55,13 @@ function setup() {
 
   // 키보드 이벤트 (window 레벨, 한영 상관없이)
   window.addEventListener("keydown", (e) => {
-    if (e.keyCode === 82) {  // R키 (한글 ㄱ)
+    if (e.keyCode === 82) {
+      // R키 (한글 ㄱ)
       drawingLayer.clear();
       prevDrawTip = null;
     }
-    if (e.keyCode === 83) {  // S키 (한글 ㄴ)
+    if (e.keyCode === 83) {
+      // S키 (한글 ㄴ)
       // 날짜시간 포맷: handDrawing_YYYYMMDD_HHMMSS
       let now = new Date();
       let filename =
@@ -76,8 +78,23 @@ function setup() {
   });
 }
 
+function windowResized() {
+  W = windowWidth;
+  H = windowHeight;
+  WIN_X = (W - VW) / 2;
+  BAR_X = WIN_X - BAR_W;
+  resizeCanvas(W, H);
+
+  // 그림 레이어도 새로 만들어야 함 (기존 그림 유지 안됨)
+  let oldLayer = drawingLayer;
+  drawingLayer = createGraphics(W, H);
+  drawingLayer.image(oldLayer, 0, 0);
+}
+
 function draw() {
   background(255); // 흰색 배경
+  rectMode(CORNER); // rectMode 리셋
+  colorMode(RGB); // colorMode 리셋
   image(drawingLayer, 0, 0); // 그림 레이어 표시
 
   // 컬러바 (무지개 그라데이션)
@@ -101,53 +118,6 @@ function draw() {
   //    함수명    입력값   리턴값
   const mirror = (x) => WIN_X + VW - x; // 좌표 반전 함수
 
-  // 웹캠 영역 (검은 배경 + 스켈레톤)
-  fill(0);
-  noStroke();
-  rect(WIN_X, WIN_Y, VW, VH);
-  
-  // 손 스켈레톤 그리기
-  const fingerConnections = [
-    [0, 1, 2, 3, 4],       // 엄지
-    [0, 5, 6, 7, 8],       // 검지
-    [0, 9, 10, 11, 12],    // 중지
-    [0, 13, 14, 15, 16],   // 약지
-    [0, 17, 18, 19, 20],   // 새끼
-    [5, 9, 13, 17]         // 손바닥
-  ];
-  
-  for (let hand of hands) {
-    let kp = hand.keypoints;
-    
-    // 드로잉 손(화면 왼손) = 라임색, 나머지 = 하얀색
-    let skeletonColor = (hand.handedness === "Right") ? color(200, 255, 0) : color(255);
-    
-    stroke(skeletonColor);
-    strokeWeight(2);
-    
-    // 선 연결
-    for (let conn of fingerConnections) {
-      for (let i = 0; i < conn.length - 1; i++) {
-        let p1 = kp[conn[i]];
-        let p2 = kp[conn[i + 1]];
-        line(mirror(p1.x), WIN_Y + p1.y, mirror(p2.x), WIN_Y + p2.y);
-      }
-    }
-    
-    // 관절 점
-    fill(skeletonColor);
-    noStroke();
-    for (let p of kp) {
-      circle(mirror(p.x), WIN_Y + p.y, 6);
-    }
-  }
-
-  // 안내 텍스트
-  fill(100);
-  textSize(12);
-  textAlign(CENTER);
-  text("R: Reset | S: Save", WIN_X + VW / 2, WIN_Y + VH + 20);
-
   // 손 구분 (거울이라 Left↔Right 반대)
   let controlHand = null,
     drawHand = null;
@@ -155,6 +125,70 @@ function draw() {
     if (hand.handedness === "Left") controlHand = hand; // 화면상 오른손
     else if (hand.handedness === "Right") drawHand = hand; // 화면상 왼손
   }
+
+  // 웹캠 영역 (검은 배경 + 스켈레톤)
+  fill(0);
+  noStroke();
+  rect(WIN_X, WIN_Y, VW, VH);
+
+  // 손 스켈레톤 그리기 (웹캠 안에만)
+  const fingerConnections = [
+    [0, 1, 2, 3, 4], // 엄지
+    [0, 5, 6, 7, 8], // 검지
+    [0, 9, 10, 11, 12], // 중지
+    [0, 13, 14, 15, 16], // 약지
+    [0, 17, 18, 19, 20], // 새끼
+    [5, 9, 13, 17], // 손바닥
+  ];
+
+  // 관련 손가락 인덱스
+  const controlFingers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // 엄지, 검지, 중지
+  const drawFingers = [0, 1, 2, 3, 4, 5, 6, 7, 8]; // 엄지, 검지
+
+  // 클리핑 (웹캠 영역 안에만 그리기)
+  push();
+  drawingContext.save();
+  drawingContext.beginPath();
+  drawingContext.rect(WIN_X, WIN_Y, VW, VH);
+  drawingContext.clip();
+
+  for (let hand of hands) {
+    let kp = hand.keypoints;
+    let isDrawHand = hand === drawHand;
+    let isControlHand = hand === controlHand;
+    let activeFingers = isDrawHand
+      ? drawFingers
+      : isControlHand
+      ? controlFingers
+      : [];
+
+    // 선 연결
+    strokeWeight(2);
+    for (let conn of fingerConnections) {
+      for (let i = 0; i < conn.length - 1; i++) {
+        let p1 = kp[conn[i]];
+        let p2 = kp[conn[i + 1]];
+        // 두 점 모두 활성 손가락이면 라임색
+        let isActive =
+          activeFingers.includes(conn[i]) &&
+          activeFingers.includes(conn[i + 1]);
+        stroke(isActive ? color(200, 255, 0) : color(255));
+        line(mirror(p1.x), WIN_Y + p1.y, mirror(p2.x), WIN_Y + p2.y);
+      }
+    }
+
+    // 관절 점
+    noStroke();
+    for (let j = 0; j < kp.length; j++) {
+      let p = kp[j];
+      let isActive = activeFingers.includes(j);
+      fill(isActive ? color(200, 255, 0) : color(255));
+      circle(mirror(p.x), WIN_Y + p.y, 6);
+    }
+  }
+
+  drawingContext.restore();
+  pop();
 
   // 오른손: 브러시 크기 조절 + 도형 변경
   if (controlHand) {
@@ -242,7 +276,7 @@ function draw() {
       // 나머지 75% = 그리기 영역 → 캔버스 전체로 매핑
       let mx = map(vx, VW * 0.25, VW, 0, W);
       let my = map(vy, VH * 0.1, VH * 0.9, 0, H);
-      
+
       // 커서 항상 표시 (pause 상태에서도)
       colorMode(HSB, 360, 255, 255);
       if (isDrawing) {
@@ -259,7 +293,7 @@ function draw() {
         rect(mx, my, brushSize, brushSize);
       }
       colorMode(RGB);
-      
+
       if (isDrawing) {
         // 손가락 벌리면 그리기
         drawingLayer.colorMode(HSB, 360, 255, 255, 255);
