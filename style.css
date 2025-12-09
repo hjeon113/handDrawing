@@ -30,13 +30,40 @@ body {
   background: #3367d6;
 }
 
+@media (max-width: 900px) {
+  .upload-btn {
+    top: auto;
+    bottom: 15px;
+    right: 15px;
+  }
+}
+
 .instructions {
   position: fixed;
   bottom: 15px;
   left: 15px;
   display: flex;
-  gap: 20px;
+  gap: 15px;
   z-index: 1000;
+}
+
+@media (min-width: 900px) {
+  .instructions {
+    top: 15px;
+    bottom: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .instructions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .hand-info {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
 }
 
 .hand-info {
